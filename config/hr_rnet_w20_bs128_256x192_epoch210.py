@@ -28,7 +28,7 @@ class Config:
     output_shape = (input_shape[0] // 2, input_shape[1] // 2)
     if output_shape[0] == 64:
         sigma = 2
-    elif output_shape[0] == 96:
+    elif output_shape[0] == 96 or output_shape[0] == 128:
         sigma = 3
     pixel_means = np.array([[[123.68, 116.78, 103.94]]])
 
