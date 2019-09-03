@@ -22,7 +22,8 @@ def parse_args():
 
 
 args = parse_args()
-cfg = importlib.import_module('config.{}.cfg'.format(args.cfg))
+cfg = importlib.import_module('config.{}'.format(args.cfg))
+cfg = cfg.cfg
 cfg.set_args(args.gpu_ids, args.continue_train)
 trainer = Trainer(Model(cfg), cfg)
 trainer.train()
