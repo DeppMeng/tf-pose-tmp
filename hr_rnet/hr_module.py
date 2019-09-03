@@ -22,6 +22,8 @@ class HRModule():
         self.downfn = downsample_block
         self.upfn = upsample_block
 
+        print(self.multi_scale_output)
+
     def forward(self, inputs):
         assert len(inputs) == self.num_branches, \
             "input_channel {} must to be same as num_branches {}".format(len(inputs), self.num_branches)
