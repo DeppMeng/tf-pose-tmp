@@ -8,6 +8,7 @@ from tensorflow.python.ops.init_ops import VarianceScaling
 
 from .front import HRFront
 from .stage import HRStage
+from .transition import ExtraTransition
 
 
 def he_normal_fanout(seed=None):
@@ -56,6 +57,7 @@ def HRNet(config_file, input, bn_is_training):
     num_stages = cfg['NET']['num_stages']
     for i in range(num_stages):
         _key = 'S{}'.format(i + 1)
+        _key_next = 'S{}'.format(i + 2)
         _stage = HRStage(stage_id=i + 1,
                          num_modules=cfg[_key]['num_modules'],
                          num_channels=cfg[_key]['num_channels'],
@@ -63,6 +65,13 @@ def HRNet(config_file, input, bn_is_training):
                          num_branches=cfg[_key]['num_branches'],
                          block_type=cfg[_key]['block_type'],
                          last_stage=True if i == num_stages - 1 else False)
+
+        # from stage1 to stage2, the #channel changed, so we need an extra transition layer.
+        if i == 0:
+            _stage = ExtraTransition(stage_id=i + 1,
+                                     num_channels=cfg[_key]['num_channels'],
+                                     num_branches=cfg[_key_next]['num_branches'],
+                                     num_out_channels=cfg[_key_next]['num_channels'])
         stages.append(_stage)
 
     batch_norm_params = {'epsilon': 1e-5,
