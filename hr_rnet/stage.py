@@ -18,6 +18,8 @@ class HRStage():
         self.last_stage = last_stage
         self.build()
 
+        print(self.num_channels)
+
     def build(self):
         for i in range(self.num_modules):
             _hr = HRModule(module_id=i, num_branches=self.num_branches, num_blocks=self.num_blocks,
