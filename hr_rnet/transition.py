@@ -15,8 +15,11 @@ class ExtraTransition():
         with tf.variable_scope(self.scope):
             _out = []
             for i in range(self.num_branches):
-                _tmp_out = slim.conv2d(input[i], num_outputs=self.num_out_channels * pow(2, i),
-                                            kernel_size=[3,3], stride=1, activation_fn=tf.nn.relu,
-                                            normalizer_fn=batch_norm)
+                if tf.shape(input[i])[3] != self.num_out_channels:
+                    _tmp_out = slim.conv2d(input[i], num_outputs=self.num_out_channels * pow(2, i),
+                                                kernel_size=[3,3], stride=1, activation_fn=tf.nn.relu,
+                                                normalizer_fn=batch_norm)
+                else:
+                    _tmp_out = input[i]
                 _out.append(_tmp_out)
         return _out

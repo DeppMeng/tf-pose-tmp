@@ -4,7 +4,7 @@ from .utils import *
 
 class HRModule():
 
-    def __init__(self, module_id, num_branches, num_channels, num_blocks, multi_scale_output, block_type, scope):
+    def __init__(self, module_id, num_branches, num_channels, num_out_channels, num_blocks, multi_scale_output, block_type, scope):
         '''
 
         :param module_id:
@@ -15,6 +15,7 @@ class HRModule():
         self.scope = scope + '_M{}'.format(module_id)
         self.num_branches = num_branches
         self.num_channels = num_channels
+        self.num_out_channels = num_out_channels
         self.num_blocks = num_blocks
         self.block_type = block_type
         self.num_outputs = self.num_branches + 1 if multi_scale_output else self.num_branches
@@ -118,7 +119,7 @@ class HRModule():
         if self.multi_scale_output:
             # an extra downsampling
             input = output_features[-1]
-            output = self.downfn(input, planes=self.num_channels * (2 ** (self.num_outputs - 1)),
+            output = self.downfn(input, planes=self.num_out_channels * (2 ** (self.num_outputs - 1)),
                                  scope=self.scope + '_D_TAIL' + str(self.num_outputs), has_relu=True)
 
             output_features.append(output)
