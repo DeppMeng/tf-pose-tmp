@@ -22,6 +22,7 @@ class HRModule():
         self.downfn = downsample_block
         self.upfn = upsample_block
 
+        print(self.scope)
         print(self.multi_scale_output)
 
     def forward(self, inputs):
