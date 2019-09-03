@@ -46,6 +46,7 @@ def load_net_cfg_from_file(cfgfile):
 
 
 def HRNet(config_file, input, bn_is_training):
+    print(config_file)
     cfg = load_net_cfg_from_file(config_file)
     stages = []
 
