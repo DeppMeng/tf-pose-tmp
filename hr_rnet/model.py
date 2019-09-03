@@ -57,7 +57,10 @@ def HRNet(config_file, input, bn_is_training):
     num_stages = cfg['NET']['num_stages']
     for i in range(num_stages):
         _key = 'S{}'.format(i + 1)
-        _key_next = 'S{}'.format(i + 2) if i != num_stages - 1 else  'S{}'.format(i + 1)
+        if i != num_stages - 1:
+            _key_next = 'S{}'.format(i + 2)
+        else:
+            _key_next = 'S{}'.format(i + 1)
         _stage = HRStage(stage_id=i + 1,
                          num_modules=cfg[_key]['num_modules'],
                          num_channels=cfg[_key]['num_channels'],
