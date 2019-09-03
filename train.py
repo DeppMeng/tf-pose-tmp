@@ -2,8 +2,8 @@ import argparse
 import importlib.util
 import numpy as np
 
-# from config.hr_rnet_w20_bs128_256x192_epoch210 import cfg
-from config.hrnet_w32_bs128_256x192_epoch210 import cfg
+from config.hr_rnet_w20_bs128_256x192_epoch210 import cfg
+# from config.hrnet_w32_bs128_256x192_epoch210 import cfg
 from core.engine import Trainer
 from core.model import Model
 from tfflat.utils import mem_info
