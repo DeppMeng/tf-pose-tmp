@@ -13,6 +13,7 @@ class Config:
 
     ## directory
     root_dir = osp.dirname(osp.abspath(__file__))
+    root_dir = root_dir + '/../'
     pretrain_model_dir = osp.join(root_dir, 'dataset', 'imagenet_weights')
     output_dir = osp.join(root_dir, 'output')
 
