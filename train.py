@@ -1,5 +1,5 @@
 import argparse
-import importlib
+import importlib.util
 import numpy as np
 
 # from config import cfg
@@ -22,7 +22,7 @@ def parse_args():
 
 
 args = parse_args()
-cfg = importlib.import_module('{}.cfg'.format(args.cfg))
+cfg = importlib.util.spec_from_file_location('cfg', '{}.py'.format(args.cfg))
 cfg.set_args(args.gpu_ids, args.continue_train)
 trainer = Trainer(Model(cfg), cfg)
 trainer.train()
