@@ -65,14 +65,14 @@ def HRNet(config_file, input, bn_is_training):
                          num_branches=cfg[_key]['num_branches'],
                          block_type=cfg[_key]['block_type'],
                          last_stage=True if i == num_stages - 1 else False)
-
+        stages.append(_stage)
         # from stage1 to stage2, the #channel changed, so we need an extra transition layer.
         if i == 0:
             _stage = ExtraTransition(stage_id=i + 1,
                                      num_channels=cfg[_key]['num_channels'],
                                      num_branches=cfg[_key_next]['num_branches'],
                                      num_out_channels=cfg[_key_next]['num_channels'])
-        stages.append(_stage)
+            stages.append(_stage)
 
     batch_norm_params = {'epsilon': 1e-5,
                          'scale': True,
