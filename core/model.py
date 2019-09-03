@@ -8,7 +8,7 @@ from .engine import ModelDesc
 
 class Model(ModelDesc):
     def __init__(self, cfg):
-        super(Model, self).__init__(self)
+        super(Model, self).__init__()
         self.cfg = cfg
 
     def head_net(self, blocks, trainable=True):
