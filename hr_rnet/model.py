@@ -85,4 +85,5 @@ def HRNet(config_file, input, bn_is_training):
             out = input
             for stage in stages:
                 out = stage.forward(out)
+                print(len(out))
     return out
