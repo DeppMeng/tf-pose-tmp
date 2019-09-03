@@ -25,7 +25,7 @@ class Config:
 
     ## input, output
     input_shape = (256, 192)  # (256,192), (384,288)
-    output_shape = (input_shape[0] // 4, input_shape[1] // 4)
+    output_shape = (input_shape[0] // 2, input_shape[1] // 2)
     if output_shape[0] == 64:
         sigma = 2
     elif output_shape[0] == 96:
