@@ -67,63 +67,67 @@ def get_3rd_point(a, b):
 def normalize_input(img, pixel_means):
     return img - pixel_means
 
+class BatchGeneration(object):
+    def __init__(self, cfg):
+        self.cfg = cfg
 
-def generate_batch(data, stage='train', cfg):
-    img = cv2.imread(os.path.join(cfg.img_path, data['imgpath']), cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
-    if img is None:
-        print('cannot read ' + os.path.join(cfg.img_path, data['imgpath']))
-        assert 0
+    def generate_batch(self, data, stage='train'):
+        cfg = self.cfg
+        img = cv2.imread(os.path.join(cfg.img_path, data['imgpath']), cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
+        if img is None:
+            print('cannot read ' + os.path.join(cfg.img_path, data['imgpath']))
+            assert 0
 
-    bbox = np.array(data['bbox']).astype(np.float32)
+        bbox = np.array(data['bbox']).astype(np.float32)
 
-    x, y, w, h = bbox
-    aspect_ratio = cfg.input_shape[1] / cfg.input_shape[0]
-    center = np.array([x + w * 0.5, y + h * 0.5])
-    if w > aspect_ratio * h:
-        h = w / aspect_ratio
-    elif w < aspect_ratio * h:
-        w = h * aspect_ratio
-    scale = np.array([w, h]) * 1.25
-    rotation = 0
+        x, y, w, h = bbox
+        aspect_ratio = cfg.input_shape[1] / cfg.input_shape[0]
+        center = np.array([x + w * 0.5, y + h * 0.5])
+        if w > aspect_ratio * h:
+            h = w / aspect_ratio
+        elif w < aspect_ratio * h:
+            w = h * aspect_ratio
+        scale = np.array([w, h]) * 1.25
+        rotation = 0
 
-    if stage == 'train':
+        if stage == 'train':
 
-        joints = np.array(data['joints']).reshape(cfg.num_kps, 3).astype(np.float32)
+            joints = np.array(data['joints']).reshape(cfg.num_kps, 3).astype(np.float32)
 
-        # data augmentation
-        scale = scale * np.clip(np.random.randn() * cfg.scale_factor + 1, 1 - cfg.scale_factor, 1 + cfg.scale_factor)
-        rotation = np.clip(np.random.randn() * cfg.rotation_factor, -cfg.rotation_factor * 2, cfg.rotation_factor * 2) \
-            if random.random() <= 0.6 else 0
-        if random.random() <= 0.5:
-            img = img[:, ::-1, :]
-            center[0] = img.shape[1] - 1 - center[0]
-            joints[:, 0] = img.shape[1] - 1 - joints[:, 0]
-            for (q, w) in cfg.kps_symmetry:
-                joints_q, joints_w = joints[q, :].copy(), joints[w, :].copy()
-                joints[w, :], joints[q, :] = joints_q, joints_w
+            # data augmentation
+            scale = scale * np.clip(np.random.randn() * cfg.scale_factor + 1, 1 - cfg.scale_factor, 1 + cfg.scale_factor)
+            rotation = np.clip(np.random.randn() * cfg.rotation_factor, -cfg.rotation_factor * 2, cfg.rotation_factor * 2) \
+                if random.random() <= 0.6 else 0
+            if random.random() <= 0.5:
+                img = img[:, ::-1, :]
+                center[0] = img.shape[1] - 1 - center[0]
+                joints[:, 0] = img.shape[1] - 1 - joints[:, 0]
+                for (q, w) in cfg.kps_symmetry:
+                    joints_q, joints_w = joints[q, :].copy(), joints[w, :].copy()
+                    joints[w, :], joints[q, :] = joints_q, joints_w
 
-        trans = get_affine_transform(center, scale, rotation, (cfg.input_shape[1], cfg.input_shape[0]))
-        cropped_img = cv2.warpAffine(img, trans, (cfg.input_shape[1], cfg.input_shape[0]), flags=cv2.INTER_LINEAR)
-        # cropped_img = cropped_img[:,:, ::-1]
-        cropped_img = normalize_input(cropped_img, cfg.pixel_means)
+            trans = get_affine_transform(center, scale, rotation, (cfg.input_shape[1], cfg.input_shape[0]))
+            cropped_img = cv2.warpAffine(img, trans, (cfg.input_shape[1], cfg.input_shape[0]), flags=cv2.INTER_LINEAR)
+            # cropped_img = cropped_img[:,:, ::-1]
+            cropped_img = normalize_input(cropped_img, cfg.pixel_means)
 
-        for i in range(cfg.num_kps):
-            if joints[i, 2] > 0:
-                joints[i, :2] = affine_transform(joints[i, :2], trans)
-                joints[i, 2] *= ((joints[i, 0] >= 0) & (joints[i, 0] < cfg.input_shape[1]) & (joints[i, 1] >= 0) & (
-                        joints[i, 1] < cfg.input_shape[0]))
-        target_coord = joints[:, :2]
-        target_valid = joints[:, 2]
+            for i in range(cfg.num_kps):
+                if joints[i, 2] > 0:
+                    joints[i, :2] = affine_transform(joints[i, :2], trans)
+                    joints[i, 2] *= ((joints[i, 0] >= 0) & (joints[i, 0] < cfg.input_shape[1]) & (joints[i, 1] >= 0) & (
+                            joints[i, 1] < cfg.input_shape[0]))
+            target_coord = joints[:, :2]
+            target_valid = joints[:, 2]
 
-        return [cropped_img, target_coord, (target_valid > 0)]
+            return [cropped_img, target_coord, (target_valid > 0)]
 
-    else:
-        trans = get_affine_transform(center, scale, rotation, (cfg.input_shape[1], cfg.input_shape[0]))
-        cropped_img = cv2.warpAffine(img, trans, (cfg.input_shape[1], cfg.input_shape[0]), flags=cv2.INTER_LINEAR)
-        # cropped_img = cropped_img[:,:, ::-1]
-        cropped_img = normalize_input(cropped_img, cfg.pixel_means)
+        else:
+            trans = get_affine_transform(center, scale, rotation, (cfg.input_shape[1], cfg.input_shape[0]))
+            cropped_img = cv2.warpAffine(img, trans, (cfg.input_shape[1], cfg.input_shape[0]), flags=cv2.INTER_LINEAR)
+            # cropped_img = cropped_img[:,:, ::-1]
+            cropped_img = normalize_input(cropped_img, cfg.pixel_means)
 
-        crop_info = np.asarray([center[0] - scale[0] * 0.5, center[1] - scale[1] * 0.5, center[0] + scale[0] * 0.5,
-                                center[1] + scale[1] * 0.5])
+            crop_info = np.asarray([center[0] - scale[0] * 0.5, center[1] - scale[1] * 0.5, center[0] + scale[0] * 0.5,
+                                    center[1] + scale[1] * 0.5])
 
-        return [cropped_img, crop_info]
+            return [cropped_img, crop_info]

@@ -17,7 +17,7 @@ from tfflat.net_utils import average_gradients, aggregate_batch, get_optimizer, 
 from tfflat.saver import load_model, Saver
 from tfflat.timer import Timer
 from tfflat.utils import approx_equal
-from .gen_batch import generate_batch
+from .gen_batch import BatchGeneration
 
 
 class ModelDesc(object):
@@ -206,12 +206,14 @@ class Trainer(Base):
         database = self.cfg.database
         train_data = database.load_train_data()
 
+        batchgen = BatchGeneration(self.cfg)
+
         data_load_thread = DataFromList(train_data)
         if self.cfg.multi_thread_enable:
-            data_load_thread = MultiProcessMapDataZMQ(data_load_thread, self.cfg.num_thread, generate_batch,
+            data_load_thread = MultiProcessMapDataZMQ(data_load_thread, self.cfg.num_thread, batchgen.generate_batch,
                                                       strict=True)
         else:
-            data_load_thread = MapData(data_load_thread, generate_batch, self.cfg)
+            data_load_thread = MapData(data_load_thread, batchgen.generate_batch)
         data_load_thread = BatchData(data_load_thread, self.cfg.batch_size)
 
         data_load_thread.reset_state()
