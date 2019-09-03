@@ -278,12 +278,31 @@ class Trainer(Base):
 
         return train_op
 
+    def model_summary(self):
+        total_parameters = 0
+        for variable in tf.trainable_variables():
+            # shape is an array of tf.Dimension
+            shape = variable.get_shape()
+            # print(shape)
+            # print(len(shape))
+            variable_parameters = 1
+            for dim in shape:
+                # print(dim)
+                variable_parameters *= dim.value
+            # print(variable_parameters)
+            total_parameters += variable_parameters
+        print("-------------------------------------------------")
+        print("Total number of params: %d" % total_parameters)
+        print("-------------------------------------------------")
+
     def train(self):
 
         # saver
         self.logger.info('Initialize saver ...')
         train_saver = Saver(self.sess, tf.global_variables(), self.cfg.model_dump_dir)
 
+        self.model_summary()
+        
         # initialize weights
         self.logger.info('Initialize all variables ...')
         self.sess.run(tf.variables_initializer(tf.global_variables(), name='init'))
