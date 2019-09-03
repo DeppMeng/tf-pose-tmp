@@ -50,9 +50,9 @@ class Model(ModelDesc):
             image = tf.placeholder(tf.float32, shape=[None, *self.cfg.input_shape, 3])
             self.set_inputs(image)
         
-        if cfg.model == 'hrnet':
+        if self.cfg.model == 'hrnet':
             from hrnet.model import HRNet
-        elif cfg.model == 'hr_rnet':
+        elif self.cfg.model == 'hr_rnet':
             from hr_rnet.model import HRNet
 
         with tf.variable_scope('HRNET'):
