@@ -4,7 +4,7 @@ import random
 import cv2
 import numpy as np
 
-from config import cfg
+# from config import cfg
 
 
 def get_affine_transform(center,
@@ -68,7 +68,7 @@ def normalize_input(img, pixel_means):
     return img - pixel_means
 
 
-def generate_batch(data, stage='train'):
+def generate_batch(data, stage='train', cfg):
     img = cv2.imread(os.path.join(cfg.img_path, data['imgpath']), cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
     if img is None:
         print('cannot read ' + os.path.join(cfg.img_path, data['imgpath']))

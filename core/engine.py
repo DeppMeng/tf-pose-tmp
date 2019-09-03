@@ -211,7 +211,7 @@ class Trainer(Base):
             data_load_thread = MultiProcessMapDataZMQ(data_load_thread, self.cfg.num_thread, generate_batch,
                                                       strict=True)
         else:
-            data_load_thread = MapData(data_load_thread, generate_batch)
+            data_load_thread = MapData(data_load_thread, generate_batch, self.cfg)
         data_load_thread = BatchData(data_load_thread, self.cfg.batch_size)
 
         data_load_thread.reset_state()
