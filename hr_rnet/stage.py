@@ -9,7 +9,7 @@ class HRStage():
         self.stage_id = stage_id
         self.num_modules = num_modules
         self.num_branches = num_branches
-        self.num_channels = num_channels[0],
+        self.num_channels = num_channels,
         self.num_out_channels = num_out_channels
         self.num_blocks = num_blocks
         self.block_type = block_type

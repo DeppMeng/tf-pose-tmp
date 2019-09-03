@@ -14,7 +14,7 @@ class HRModule():
         '''
         self.scope = scope + '_M{}'.format(module_id)
         self.num_branches = num_branches
-        self.num_channels = num_channels
+        self.num_channels = num_channels[0]
         self.num_out_channels = num_out_channels
         self.num_blocks = num_blocks
         self.block_type = block_type
