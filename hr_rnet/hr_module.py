@@ -48,6 +48,7 @@ class HRModule():
                 _out = basic_residual_block(_out, channels, scope=scope + '_C' + str(i))
         elif block_type == 'Bottleneck':
             for i in range(self.num_blocks):
+                print(channels)
                 _out = bottleneck_block(_out, channels, scope=scope + '_C' + str(i))
         else:
             raise ValueError("{} is not a valid block type (Basic or Bottleneck).".format(block_type))
