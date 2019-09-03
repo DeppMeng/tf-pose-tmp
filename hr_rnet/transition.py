@@ -6,7 +6,7 @@ class ExtraTransition():
                  num_channels,
                  num_branches,
                  num_out_channels):
-        self.scope = stage_id + 'ExtraTransition'
+        self.scope = str(stage_id) + 'ExtraTransition'
         self.num_channels = num_channels
         self.num_branches = num_branches
         self.num_out_channels = num_out_channels
