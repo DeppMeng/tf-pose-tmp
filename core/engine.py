@@ -10,7 +10,7 @@ import setproctitle
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
-from config import cfg
+# from config import cfg
 from tfflat.data_provider import DataFromList, MultiProcessMapDataZMQ, BatchData, MapData
 from tfflat.logger import colorlogger
 from tfflat.net_utils import average_gradients, aggregate_batch, get_optimizer, get_tower_summary_dict
@@ -100,12 +100,12 @@ class Base(object):
     train/test
     """
 
-    def __init__(self, net, data_iter=None, log_name='logs.txt'):
+    def __init__(self, net, cfg, data_iter=None, log_name='logs.txt'):
         self._input_list = []
         self._output_list = []
         self._outputs = []
         self.graph_ops = None
-
+        self.cfg = cfg
         self.net = net
 
         self.cur_epoch = 0
@@ -118,7 +118,7 @@ class Base(object):
         self.read_timer = Timer()
 
         # logger
-        self.logger = colorlogger(cfg.log_dir, log_name=log_name)
+        self.logger = colorlogger(self.cfg.log_dir, log_name=log_name)
 
         # initialize tensorflow
         tfconfig = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
@@ -151,7 +151,7 @@ class Base(object):
     def load_weights(self, model=None):
 
         if model == 'last_epoch':
-            sfiles = os.path.join(cfg.model_dump_dir, 'snapshot_*.ckpt.meta')
+            sfiles = os.path.join(self.cfg.model_dump_dir, 'snapshot_*.ckpt.meta')
             sfiles = glob.glob(sfiles)
             if len(sfiles) > 0:
                 sfiles.sort(key=os.path.getmtime)
@@ -162,7 +162,7 @@ class Base(object):
                 return
 
         if isinstance(model, int):
-            model = os.path.join(cfg.model_dump_dir, 'snapshot_%d.ckpt' % model)
+            model = os.path.join(self.cfg.model_dump_dir, 'snapshot_%d.ckpt' % model)
 
         if isinstance(model, str) and (osp.exists(model + '.meta') or osp.exists(model)):
             self.logger.info('Initialized model weights from {} ...'.format(model))
@@ -190,45 +190,46 @@ class Base(object):
 
 class Trainer(Base):
 
-    def __init__(self, net, data_iter=None):
-        self.lr_eval = cfg.lr
-        self.lr = tf.Variable(cfg.lr, trainable=False)
-        self._optimizer = get_optimizer(self.lr, cfg.optimizer)
+    def __init__(self, net, cfg, data_iter=None):
+        self.cfg = cfg
+        self.lr_eval = self.cfg.lr
+        self.lr = tf.Variable(self.cfg.lr, trainable=False)
+        self._optimizer = get_optimizer(self.lr, self.cfg.optimizer)
 
-        super(Trainer, self).__init__(net, data_iter, log_name='train_logs.txt')
+        super(Trainer, self).__init__(net, self.cfg, data_iter, log_name='train_logs.txt')
 
         # make data
         self._data_iter, self.itr_per_epoch = self._make_data()
 
     def _make_data(self):
 
-        database = cfg.database
+        database = self.cfg.database
         train_data = database.load_train_data()
 
         data_load_thread = DataFromList(train_data)
-        if cfg.multi_thread_enable:
-            data_load_thread = MultiProcessMapDataZMQ(data_load_thread, cfg.num_thread, generate_batch,
+        if self.cfg.multi_thread_enable:
+            data_load_thread = MultiProcessMapDataZMQ(data_load_thread, self.cfg.num_thread, generate_batch,
                                                       strict=True)
         else:
             data_load_thread = MapData(data_load_thread, generate_batch)
-        data_load_thread = BatchData(data_load_thread, cfg.batch_size)
+        data_load_thread = BatchData(data_load_thread, self.cfg.batch_size)
 
         data_load_thread.reset_state()
         dataiter = data_load_thread.get_data()
 
-        return dataiter, math.ceil(len(train_data) / cfg.batch_size / cfg.num_gpus)
+        return dataiter, math.ceil(len(train_data) / self.cfg.batch_size / self.cfg.num_gpus)
 
     def _make_graph(self):
-        self.logger.info("Generating training graph on {} GPUs ...".format(cfg.num_gpus))
+        self.logger.info("Generating training graph on {} GPUs ...".format(self.cfg.num_gpus))
 
         weights_initializer = slim.xavier_initializer()
         biases_initializer = tf.constant_initializer(0.)
         biases_regularizer = tf.no_regularizer
-        weights_regularizer = tf.contrib.layers.l2_regularizer(cfg.weight_decay)
+        weights_regularizer = tf.contrib.layers.l2_regularizer(self.cfg.weight_decay)
 
         tower_grads = []
         with tf.variable_scope(tf.get_variable_scope()):
-            for i in range(cfg.num_gpus):
+            for i in range(self.cfg.num_gpus):
                 with tf.device('/gpu:%d' % i):
                     with tf.name_scope('tower_%d' % i) as name_scope:
                         # Force all Variables to reside on the CPU.
@@ -243,7 +244,7 @@ class Trainer(Base):
                                     biases_initializer=biases_initializer):
                                 # loss over single GPU
                                 self.net.make_network(is_train=True)
-                                if i == cfg.num_gpus - 1:
+                                if i == self.cfg.num_gpus - 1:
                                     loss = self.net.get_loss(include_wd=True)
                                 else:
                                     loss = self.net.get_loss()
@@ -252,7 +253,7 @@ class Trainer(Base):
                         tf.get_variable_scope().reuse_variables()
 
                         if i == 0:
-                            if cfg.num_gpus > 1 and cfg.bn_train is True:
+                            if self.cfg.num_gpus > 1 and self.cfg.bn_train is True:
                                 self.logger.warning("BN is calculated only on single GPU.")
                             extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, name_scope)
                             with tf.control_dependencies(extra_update_ops):
@@ -279,16 +280,16 @@ class Trainer(Base):
 
         # saver
         self.logger.info('Initialize saver ...')
-        train_saver = Saver(self.sess, tf.global_variables(), cfg.model_dump_dir)
+        train_saver = Saver(self.sess, tf.global_variables(), self.cfg.model_dump_dir)
 
         # initialize weights
         self.logger.info('Initialize all variables ...')
         self.sess.run(tf.variables_initializer(tf.global_variables(), name='init'))
-        self.load_weights('last_epoch' if cfg.continue_train else cfg.init_model)
+        self.load_weights('last_epoch' if self.cfg.continue_train else self.cfg.init_model)
 
         self.logger.info('Start training ...')
         start_itr = self.cur_epoch * self.itr_per_epoch + 1
-        end_itr = self.itr_per_epoch * cfg.end_epoch + 1
+        end_itr = self.itr_per_epoch * self.cfg.end_epoch + 1
         for itr in range(start_itr, end_itr):
             self.tot_timer.tic()
 
@@ -296,7 +297,7 @@ class Trainer(Base):
             setproctitle.setproctitle('train epoch:' + str(self.cur_epoch))
 
             # apply current learning policy
-            cur_lr = get_lr(self.cur_epoch)
+            cur_lr = self.get_lr(self.cur_epoch)
             if not approx_equal(cur_lr, self.lr_eval):
                 print(self.lr_eval, cur_lr)
                 self.sess.run(tf.assign(self.lr, cur_lr))
@@ -325,7 +326,7 @@ class Trainer(Base):
                 ' '.join(map(lambda x: '%s: %.4f' % (x[0], x[1]), itr_summary.items())),
             ]
 
-            if itr % cfg.log_display == 0:
+            if itr % self.cfg.log_display == 0:
                 self.logger.info(' '.join(screen))
 
             if itr % self.itr_per_epoch == 0:
@@ -334,20 +335,21 @@ class Trainer(Base):
             self.tot_timer.toc()
 
 
-def get_lr(epoch):
-    for e in cfg.lr_dec_epoch:
-        if epoch < e:
-            break
-    if epoch < cfg.lr_dec_epoch[-1]:
-        i = cfg.lr_dec_epoch.index(e)
-        return cfg.lr / (cfg.lr_dec_factor ** i)
-    else:
-        return cfg.lr / (cfg.lr_dec_factor ** len(cfg.lr_dec_epoch))
+    def get_lr(self, epoch):
+        for e in self.cfg.lr_dec_epoch:
+            if epoch < e:
+                break
+        if epoch < self.cfg.lr_dec_epoch[-1]:
+            i = self.cfg.lr_dec_epoch.index(e)
+            return self.cfg.lr / (self.cfg.lr_dec_factor ** i)
+        else:
+            return self.cfg.lr / (self.cfg.lr_dec_factor ** len(self.cfg.lr_dec_epoch))
 
 
 class Tester(Base):
-    def __init__(self, net, data_iter=None):
-        super(Tester, self).__init__(net, data_iter, log_name='test_logs.txt')
+    def __init__(self, net, cfg, data_iter=None):
+        super(Tester, self).__init__(net, data_iter, cfg, log_name='test_logs.txt')
+        self.cfg = cfg
 
     def next_feed(self, batch_data=None):
         if self._data_iter is None and batch_data is None:
@@ -366,12 +368,12 @@ class Tester(Base):
             assert isinstance(batch_data, list) or isinstance(batch_data, tuple), "Input data should be list-type."
             assert len(batch_data) == len(self._input_list[0]), "Input data is incomplete."
 
-            batch_size = cfg.batch_size
+            batch_size = self.cfg.batch_size
             if self._input_list[0][0].get_shape().as_list()[0] is None:
                 # fill batch
                 for i in range(len(batch_data)):
-                    batch_size = (len(batch_data[i]) + cfg.num_gpus - 1) // cfg.num_gpus
-                    total_batches = batch_size * cfg.num_gpus
+                    batch_size = (len(batch_data[i]) + self.cfg.num_gpus - 1) // self.cfg.num_gpus
+                    total_batches = batch_size * self.cfg.num_gpus
                     left_batches = total_batches - len(batch_data[i])
                     if left_batches > 0:
                         batch_data[i] = np.append(batch_data[i], np.zeros((left_batches, *batch_data[i].shape[1:])),
@@ -379,7 +381,7 @@ class Tester(Base):
                         self.logger.warning("Fill some blanks to fit batch_size which wastes %d%% computation" % (
                                 left_batches * 100. / total_batches))
             else:
-                assert cfg.batch_size * cfg.num_gpus == len(batch_data[0]), \
+                assert self.cfg.batch_size * self.cfg.num_gpus == len(batch_data[0]), \
                     "Input batch doesn't fit placeholder batch."
 
             for j, inputs in enumerate(self._input_list):
@@ -391,10 +393,10 @@ class Tester(Base):
         return feed_dict, batch_size
 
     def _make_graph(self):
-        self.logger.info("Generating testing graph on {} GPUs ...".format(cfg.num_gpus))
+        self.logger.info("Generating testing graph on {} GPUs ...".format(self.cfg.num_gpus))
 
         with tf.variable_scope(tf.get_variable_scope()):
-            for i in range(cfg.num_gpus):
+            for i in range(self.cfg.num_gpus):
                 with tf.device('/gpu:%d' % i):
                     with tf.name_scope('tower_%d' % i) as name_scope:
                         with slim.arg_scope([slim.model_variable, slim.variable], device='/device:CPU:0'):
@@ -431,7 +433,7 @@ class Tester(Base):
         res = self.sess.run([*self.graph_ops, *self.summary_dict.values()], feed_dict=feed_dict)
         self.gpu_timer.toc()
 
-        if data is not None and len(data[0]) < cfg.num_gpus * batch_size:
+        if data is not None and len(data[0]) < self.cfg.num_gpus * batch_size:
             for i in range(len(res)):
                 res[i] = res[i][:len(data[0])]
 

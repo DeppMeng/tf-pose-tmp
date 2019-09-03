@@ -1,12 +1,15 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
-from config import cfg
-from hrnet.model import HRNet
+# from config import cfg
+# from hrnet.model import HRNet
 from .engine import ModelDesc
 
 
 class Model(ModelDesc):
+    def __init__(self, cfg):
+        super(Model, self).__init__(self)
+        self.cfg = cfg
 
     def head_net(self, blocks, trainable=True):
 
@@ -14,7 +17,7 @@ class Model(ModelDesc):
 
         with slim.arg_scope([slim.conv2d],  # NOTE(NHWC)
                             weights_regularizer=slim.l2_regularizer(1e-4)):
-            out = slim.conv2d(blocks[0], cfg.num_kps, [1, 1],
+            out = slim.conv2d(blocks[0], self.cfg.num_kps, [1, 1],
                               trainable=trainable, weights_initializer=msra_initializer,
                               padding='SAME', normalizer_fn=None, activation_fn=None,
                               scope='out')
@@ -28,8 +31,8 @@ class Model(ModelDesc):
         xx = tf.reshape(tf.to_float(xx), (1, *output_shape, 1))
         yy = tf.reshape(tf.to_float(yy), (1, *output_shape, 1))
 
-        x = tf.floor(tf.reshape(coord[:, :, 0], [-1, 1, 1, cfg.num_kps]) / cfg.input_shape[1] * output_shape[1] + 0.5)
-        y = tf.floor(tf.reshape(coord[:, :, 1], [-1, 1, 1, cfg.num_kps]) / cfg.input_shape[0] * output_shape[0] + 0.5)
+        x = tf.floor(tf.reshape(coord[:, :, 0], [-1, 1, 1, self.cfg.num_kps]) / self.cfg.input_shape[1] * output_shape[1] + 0.5)
+        y = tf.floor(tf.reshape(coord[:, :, 1], [-1, 1, 1, self.cfg.num_kps]) / self.cfg.input_shape[0] * output_shape[0] + 0.5)
 
         heatmap = tf.exp(-(((xx - x) / tf.to_float(sigma)) ** 2) / tf.to_float(2) - (
                 ((yy - y) / tf.to_float(sigma)) ** 2) / tf.to_float(2))
@@ -39,21 +42,26 @@ class Model(ModelDesc):
     def make_network(self, is_train):
 
         if is_train:
-            image = tf.placeholder(tf.float32, shape=[cfg.batch_size, *cfg.input_shape, 3])
-            target_coord = tf.placeholder(tf.float32, shape=[cfg.batch_size, cfg.num_kps, 2])
-            valid = tf.placeholder(tf.float32, shape=[cfg.batch_size, cfg.num_kps])
+            image = tf.placeholder(tf.float32, shape=[self.cfg.batch_size, *self.cfg.input_shape, 3])
+            target_coord = tf.placeholder(tf.float32, shape=[self.cfg.batch_size, self.cfg.num_kps, 2])
+            valid = tf.placeholder(tf.float32, shape=[self.cfg.batch_size, self.cfg.num_kps])
             self.set_inputs(image, target_coord, valid)
         else:
-            image = tf.placeholder(tf.float32, shape=[None, *cfg.input_shape, 3])
+            image = tf.placeholder(tf.float32, shape=[None, *self.cfg.input_shape, 3])
             self.set_inputs(image)
+        
+        if cfg.model == 'hrnet':
+            from hrnet.model import HRNet
+        elif cfg.model == 'hr_rnet':
+            from hr_rnet.model import HRNet
 
         with tf.variable_scope('HRNET'):
-            hrnet_fms = HRNet(cfg.hrnet_config, image, is_train)
+            hrnet_fms = HRNet(self.cfg.hrnet_config, image, is_train)
             heatmap_outs = self.head_net(hrnet_fms)
 
         if is_train:
-            gt_heatmap = tf.stop_gradient(self.render_gaussian_heatmap(target_coord, cfg.output_shape, cfg.sigma))
-            valid_mask = tf.reshape(valid, [cfg.batch_size, 1, 1, cfg.num_kps])
+            gt_heatmap = tf.stop_gradient(self.render_gaussian_heatmap(target_coord, self.cfg.output_shape, self.cfg.sigma))
+            valid_mask = tf.reshape(valid, [self.cfg.batch_size, 1, 1, self.cfg.num_kps])
             loss = tf.reduce_mean(tf.square(heatmap_outs - gt_heatmap) * valid_mask)
             self.add_tower_summary('loss', loss)
             self.set_loss(loss)

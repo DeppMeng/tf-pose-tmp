@@ -17,9 +17,10 @@ class Config:
     output_dir = osp.join(root_dir, 'output')
 
     ## model setting
-    backbone = 'w32' # 'w32', 'w48'
+    model = 'hr_rnet'
+    backbone = 'w20' # 'w32', 'w48'
     init_model = osp.join(pretrain_model_dir, 'hrnet_' + backbone + '.ckpt')
-    hrnet_config = osp.join(root_dir, 'hrnet', 'configs', backbone + '.cfg')
+    hrnet_config = osp.join(root_dir, 'hr_rnet', 'configs', backbone + '.cfg')
 
     ## input, output
     input_shape = (256, 192)  # (256,192), (384,288)
