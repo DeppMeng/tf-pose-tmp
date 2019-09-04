@@ -21,6 +21,7 @@ class ExtraTransition():
                                                 kernel_size=[3,3], stride=1, activation_fn=tf.nn.relu,
                                                 normalizer_fn=batch_norm)
                 else:
+                    print(0)
                     _tmp_out = input[i]
                 _out.append(_tmp_out)
         return _out
