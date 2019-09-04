@@ -16,7 +16,8 @@ class ExtraTransition():
             _out = []
             for i in range(self.num_branches):
                 if tf.shape(input[i])[3] != self.num_out_channels:
-                    print(1)
+                    print(tf.shape(input[i])[3])
+                    print(self.num_out_channels)
                     _tmp_out = slim.conv2d(input[i], num_outputs=self.num_out_channels * pow(2, i),
                                                 kernel_size=[3,3], stride=1, activation_fn=tf.nn.relu,
                                                 normalizer_fn=batch_norm)
