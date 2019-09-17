@@ -35,7 +35,7 @@ class Model(ModelDesc):
             x1 = tf.image.resize_images(blocks[1], [shape[1], shape[2]])
             x2 = tf.image.resize_images(blocks[2], [shape[1], shape[2]])
             x = tf.concat([x0, x1, x2], 3)
-            x_new = slim.conv2d(x, self.cfg.num_kps, [1, 1],
+            x_new = slim.conv2d(x, 7 * shape[3], [1, 1],
                               trainable=trainable, weights_initializer=msra_initializer,
                               padding='SAME', normalizer_fn=batch_norm, activation_fn=tf.nn.relu,
                               scope='out')

@@ -37,7 +37,7 @@ class Config:
     optimizer = 'adam'
     weight_decay = 1e-5
     bn_train = True
-    batch_size = 32
+    batch_size = 16
     scale_factor = 0.35
     rotation_factor = 45
 
@@ -46,7 +46,7 @@ class Config:
     flip_test = True
     oks_nms_thr = 0.9
     score_thr = 0.2
-    test_batch_size = 32
+    test_batch_size = 16
 
     ## others
     multi_thread_enable = True
