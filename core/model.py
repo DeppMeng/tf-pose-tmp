@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
+from tensorflow.contrib.layers.python.layers import batch_norm
 # from config import cfg
 # from hrnet.model import HRNet
 from .engine import ModelDesc
@@ -18,6 +19,27 @@ class Model(ModelDesc):
         with slim.arg_scope([slim.conv2d],  # NOTE(NHWC)
                             weights_regularizer=slim.l2_regularizer(1e-4)):
             out = slim.conv2d(blocks[0], self.cfg.num_kps, [1, 1],
+                              trainable=trainable, weights_initializer=msra_initializer,
+                              padding='SAME', normalizer_fn=None, activation_fn=None,
+                              scope='out')
+        return out
+
+    def concat_124_head_net(self, blocks, trainable=True):
+
+        msra_initializer = tf.contrib.layers.variance_scaling_initializer()
+
+        with slim.arg_scope([slim.conv2d],  # NOTE(NHWC)
+                            weights_regularizer=slim.l2_regularizer(1e-4)):
+            x0 = blocks[0]
+            shape = tf.shape(x0)
+            x1 = tf.image.resize_images(blocks[1], [shape[1], shape[2]])
+            x2 = tf.image.resize_images(blocks[2], [shape[1], shape[2]])
+            x = tf.concat([x0, x1, x2], 3)
+            x_new = slim.conv2d(x, self.cfg.num_kps, [1, 1],
+                              trainable=trainable, weights_initializer=msra_initializer,
+                              padding='SAME', normalizer_fn=batch_norm, activation_fn=tf.nn.relu,
+                              scope='out')
+            out = slim.conv2d(x_new, self.cfg.num_kps, [1, 1],
                               trainable=trainable, weights_initializer=msra_initializer,
                               padding='SAME', normalizer_fn=None, activation_fn=None,
                               scope='out')
@@ -54,10 +76,15 @@ class Model(ModelDesc):
             from hrnet.model import HRNet
         elif self.cfg.model == 'hr_rnet':
             from hr_rnet.model import HRNet
+        elif self.cfg.model == 'full_rnet':
+            from full_rnet_concat_124.model import HRNet
 
         with tf.variable_scope('HRNET'):
             hrnet_fms = HRNet(self.cfg.hrnet_config, image, is_train)
-            heatmap_outs = self.head_net(hrnet_fms)
+            if self.cfg.model == 'full_rnet':
+                heatmap_outs = self.concat_124_head_net(hrnet_fms)
+            else:
+                heatmap_outs = self.head_net(hrnet_fms)
 
         if is_train:
             gt_heatmap = tf.stop_gradient(self.render_gaussian_heatmap(target_coord, self.cfg.output_shape, self.cfg.sigma))

@@ -2,7 +2,7 @@ import argparse
 import importlib.util
 import numpy as np
 
-from config.hr_rnet_w20_bs128_256x192_epoch210 import cfg
+# from config.hr_rnet_w20_bs128_256x192_epoch210 import cfg
 # from config.hrnet_w32_bs128_256x192_epoch210 import cfg
 from core.engine import Trainer
 from core.model import Model
@@ -23,8 +23,8 @@ def parse_args():
 
 
 args = parse_args()
-# cfg = importlib.import_module('config.{}'.format(args.cfg))
-# cfg = cfg.cfg
+cfg = importlib.import_module('config.{}'.format(args.cfg))
+cfg = cfg.cfg
 cfg.set_args(args.gpu_ids, args.continue_train)
 trainer = Trainer(Model(cfg), cfg)
 trainer.train()
