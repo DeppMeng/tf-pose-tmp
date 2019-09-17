@@ -76,7 +76,7 @@ class Model(ModelDesc):
             from hrnet.model import HRNet
         elif self.cfg.model == 'hr_rnet':
             from hr_rnet.model import HRNet
-        elif self.cfg.model == 'full_rnet':
+        elif 'full_rnet' in self.cfg.model:
             from full_rnet_concat_124.model import HRNet
 
         with tf.variable_scope('HRNET'):
