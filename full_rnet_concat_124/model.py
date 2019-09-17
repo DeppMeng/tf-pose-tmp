@@ -51,7 +51,7 @@ def HRNet(config_file, input, bn_is_training):
     stages = []
 
     front = HRFront(num_channels=cfg['FRONT']['num_channels'],
-                    output_channels=[i * cfg['FRONT']['output_channels'] for i in range(1, 4)])
+                    output_channels=[pow(2, i) * cfg['FRONT']['output_channels'] for i in range(3)])
     stages.append(front)
 
     num_stages = cfg['NET']['num_stages']
