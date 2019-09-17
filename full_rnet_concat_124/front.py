@@ -17,7 +17,7 @@ class HRFront():
                                stride=2, activation_fn=tf.nn.relu, normalizer_fn=batch_norm)
 
             # conv2 + bn2 + relu2
-            _full_res = slim.conv2d(input, num_outputs=self.output_channels[1], kernel_size=[3, 3],
+            _full_res = slim.conv2d(input, num_outputs=self.output_channels[0], kernel_size=[3, 3],
                                stride=1, activation_fn=tf.nn.relu, normalizer_fn=batch_norm)
 
             # bottlenect
