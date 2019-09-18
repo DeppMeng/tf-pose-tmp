@@ -81,7 +81,7 @@ class Model(ModelDesc):
 
         with tf.variable_scope('HRNET'):
             hrnet_fms = HRNet(self.cfg.hrnet_config, image, is_train)
-            if self.cfg.model == 'full_rnet':
+            if 'full_rnet' in self.cfg.model:
                 heatmap_outs = self.concat_124_head_net(hrnet_fms)
             else:
                 heatmap_outs = self.head_net(hrnet_fms)
