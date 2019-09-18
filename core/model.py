@@ -31,7 +31,7 @@ class Model(ModelDesc):
         with slim.arg_scope([slim.conv2d],  # NOTE(NHWC)
                             weights_regularizer=slim.l2_regularizer(1e-4)):
             x0 = blocks[0]
-            shape = tf.shape(x0)
+            shape = x0.get_shape().as_list()
             x1 = tf.image.resize_images(blocks[1], [shape[1], shape[2]])
             x2 = tf.image.resize_images(blocks[2], [shape[1], shape[2]])
             x = tf.concat([x0, x1, x2], 3)
