@@ -35,12 +35,16 @@ class Model(ModelDesc):
             x1 = tf.image.resize_images(blocks[1], [shape[1], shape[2]])
             x2 = tf.image.resize_images(blocks[2], [shape[1], shape[2]])
             x = tf.concat([x0, x1, x2], 3)
-            print(7 * shape[3])
             x = slim.conv2d(x, 7 * shape[3], [1, 1],
                               trainable=trainable, weights_initializer=msra_initializer,
-                              padding='SAME', normalizer_fn=None, activation_fn=None,
+                              padding='SAME', normalizer_fn=batch_norm, activation_fn=tf.nn.relu,
                               scope='extra_1x1')
-            x = batch_norm(x, activation_fn=tf.nn.relu, scope='extra_bn_relu')
+
+            # x = slim.conv2d(x, 7 * shape[3], [1, 1],
+            #                   trainable=trainable, weights_initializer=msra_initializer,
+            #                   padding='SAME', normalizer_fn=None, activation_fn=None,
+            #                   scope='extra_1x1')
+            # x = batch_norm(x, activation_fn=tf.nn.relu, scope='extra_bn_relu')
             out = slim.conv2d(x, self.cfg.num_kps, [1, 1],
                               trainable=trainable, weights_initializer=msra_initializer,
                               padding='SAME', normalizer_fn=None, activation_fn=None,
