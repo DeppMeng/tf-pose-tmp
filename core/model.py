@@ -38,7 +38,7 @@ class Model(ModelDesc):
             x_new = slim.conv2d(x, 7 * shape[3], [1, 1],
                               trainable=trainable, weights_initializer=msra_initializer,
                               padding='SAME', normalizer_fn=batch_norm, activation_fn=tf.nn.relu,
-                              scope='out')
+                              scope='extra_1x1')
             out = slim.conv2d(x_new, self.cfg.num_kps, [1, 1],
                               trainable=trainable, weights_initializer=msra_initializer,
                               padding='SAME', normalizer_fn=None, activation_fn=None,
